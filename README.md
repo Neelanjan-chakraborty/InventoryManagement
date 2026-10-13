@@ -12,7 +12,7 @@ docker compose up --build
 
 Open <http://localhost:8000>. No `.env`, key generation, `composer install`, `npm install`, or `migrate` step is needed — the image builds the front-end assets and installs dependencies, and on first boot the app container generates its `APP_KEY`, waits for MySQL, and runs migrations.
 
-The stack is two services: **`app`** (PHP, serving on 8000) and **`mysql`** (MySQL 8.4). MySQL data lives in the `app-mysql` volume and storage/logs in `app-storage`, so both survive `docker compose down` and rebuilds. MySQL is also published on `127.0.0.1:3306` so you can attach a GUI client (TablePlus, DBeaver) with the credentials below.
+The stack is two services: **`app`** (PHP, serving on 8000) and **`mysql`** (MySQL 8.4). MySQL data lives in the `app-mysql` volume and storage/logs in `app-storage`, so both survive `docker compose down` and rebuilds. MySQL is also published on `127.0.0.1:3307` (not MySQL's usual 3306, so it doesn't collide with one you already have running) so you can attach a GUI client (TablePlus, DBeaver) with the credentials below.
 
 Default credentials (override by exporting them or putting them in `.env` before `docker compose up`):
 
@@ -22,13 +22,27 @@ Default credentials (override by exporting them or putting them in `.env` before
 | `DB_USERNAME` / `DB_PASSWORD` | `inventory` / `inventory` |
 | `DB_ROOT_PASSWORD` | `root` |
 | `DB_TEST_DATABASE` | `inventory_test` |
-| `DB_PORT_HOST` | `3306` (host port for MySQL) |
+| `DB_PORT_HOST` | `3307` (host port for MySQL) |
 
-Grant the first administrator (after registering an account in the app):
+### Logging in
+
+The app ships with **no seeded accounts** — a fresh `docker compose up` has an empty database, by design (see Security notes). Two ways to get in:
+
+**Register through the UI**, then promote that account to admin:
 
 ```bash
 docker compose exec app php artisan inventory:promote-admin student@example.edu
 ```
+
+Sign in again; an administrator can assign the coordinator role from **Access control**.
+
+**Or, for local development only**, seed three ready-made accounts (admin, coordinator, student — password `Password123!` for all three):
+
+```bash
+docker compose exec app php artisan db:seed --class="Database\Seeders\DevAccountsSeeder" --force
+```
+
+(`--force` is needed because the container runs with `APP_ENV=production`, which otherwise prompts for confirmation before seeding.) This is opt-in — `DevAccountsSeeder` is never run automatically, and it is not meant for anything beyond a local/dev database. Run it again any time after a `docker compose down -v` to recreate the same three logins.
 
 Other common operations:
 

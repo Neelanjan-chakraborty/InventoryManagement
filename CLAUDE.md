@@ -39,7 +39,7 @@ vendor/bin/pint             # format (Pint is the only linter; no static analysi
 php artisan inventory:promote-admin user@example.edu   # bootstrap the first admin
 ```
 
-There are no seeded or hard-coded staff credentials: register through the app, promote with the artisan command above, then assign `coordinator` from **Access control**.
+There are no seeded or hard-coded staff credentials by default: register through the app, promote with the artisan command above, then assign `coordinator` from **Access control**. For local Docker development only, `database/seeders/DevAccountsSeeder.php` creates one admin/coordinator/student account (password `Password123!`) — it is never run automatically; invoke it explicitly with `php artisan db:seed --class="Database\Seeders\DevAccountsSeeder" --force` (`--force` because the container runs `APP_ENV=production`). Never call it from `DatabaseSeeder` or any production path.
 
 ## Architecture
 

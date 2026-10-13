@@ -23,8 +23,17 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
+        <!-- Tests run against MySQL so they exercise the same engine, charset and
+             SQL mode as the app. Requires the stack to be up (docker compose up),
+             which publishes MySQL on 127.0.0.1:3307. Inside the `test` container
+             these are overridden by real environment variables pointing at `mysql`.
+             To run without MySQL: DB_CONNECTION=sqlite DB_DATABASE=:memory: php artisan test -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="3307"/>
+        <env name="DB_DATABASE" value="inventory_test"/>
+        <env name="DB_USERNAME" value="inventory"/>
+        <env name="DB_PASSWORD" value="inventory"/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

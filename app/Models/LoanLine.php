@@ -11,6 +11,11 @@ class LoanLine extends Model
 
     protected $fillable = ['loan_id', 'item_id', 'asset_id', 'quantity', 'outstanding_quantity'];
 
+    protected function casts(): array
+    {
+        return ['quantity' => 'integer', 'outstanding_quantity' => 'integer'];
+    }
+
     public function loan()
     {
         return $this->belongsTo(Loan::class);

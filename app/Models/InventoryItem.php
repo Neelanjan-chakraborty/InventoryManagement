@@ -17,7 +17,15 @@ class InventoryItem extends Model
 
     protected function casts(): array
     {
-        return ['active' => 'boolean'];
+        return [
+            'active' => 'boolean',
+            'total_quantity' => 'integer',
+            'damaged_quantity' => 'integer',
+            'lost_quantity' => 'integer',
+            'maintenance_quantity' => 'integer',
+            'max_per_issue' => 'integer',
+            'max_renewals' => 'integer',
+        ];
     }
 
     public function location()
@@ -50,7 +58,8 @@ class InventoryItem extends Model
             return $this->assets()->where('status', 'available')->where('condition', 'usable')->count();
         }
 
-        $issued = $this->loanLines()
+        // MySQL returns SUM() as a string (or null for no rows); cast before arithmetic.
+        $issued = (int) $this->loanLines()
             ->where('outstanding_quantity', '>', 0)
             ->whereHas('loan', fn ($query) => $query->where('status', 'active'))
             ->sum('outstanding_quantity');

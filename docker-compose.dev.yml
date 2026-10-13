@@ -1,0 +1,32 @@
+# Development overlay: live code from the host, no config caching, asset rebuilds on save.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      LOG_LEVEL: debug
+    volumes:
+      # Source from the host; vendor/ stays as built in the image.
+      # public/build is NOT masked here — it is written by the vite service below.
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - app-storage:/var/www/html/storage
+    # Skip route/config/view caching so edits take effect immediately.
+    command: ["sh", "-c", "php artisan migrate --force --no-interaction && php artisan optimize:clear && php artisan serve --host=0.0.0.0 --port=8000"]
+
+  # Rebuilds public/build whenever resources/ changes. `vite build --watch` is used
+  # instead of the hot-reload dev server so no extra host ports or URL config are needed.
+  vite:
+    image: node:22-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm ci && npx vite build --watch"]
+    volumes:
+      - .:/app
+      - vite-node-modules:/app/node_modules
+
+volumes:
+  vite-node-modules:

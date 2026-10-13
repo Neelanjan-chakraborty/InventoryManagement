@@ -13,7 +13,7 @@ class ItemReturn extends Model
 
     protected function casts(): array
     {
-        return ['received_at' => 'datetime'];
+        return ['received_at' => 'datetime', 'quantity' => 'integer'];
     }
 
     public function line()

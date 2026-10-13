@@ -113,8 +113,12 @@ class InventoryController extends Controller
                 'status' => $data['status'],
                 'location_id' => $data['location_id'] ?? null,
             ]);
+            // total_quantity is UNSIGNED: MySQL rejects an underflow outright where
+            // SQLite would have stored a negative count.
             if ($previousStatus !== 'retired' && $data['status'] === 'retired') {
-                $item->decrement('total_quantity');
+                if ($item->total_quantity > 0) {
+                    $item->decrement('total_quantity');
+                }
             } elseif ($previousStatus === 'retired' && $data['status'] !== 'retired') {
                 $item->increment('total_quantity');
             }
@@ -223,7 +227,7 @@ class InventoryController extends Controller
             fputcsv($output, ['Code', 'Item', 'Category', 'Tracking', 'Total', 'Available', 'Issued', 'Damaged', 'Lost', 'Maintenance', 'Location']);
             InventoryItem::query()->with('location')->orderBy('code')->chunk(200, function ($items) use ($output) {
                 foreach ($items as $item) {
-                    $issued = $item->loanLines()->where('outstanding_quantity', '>', 0)
+                    $issued = (int) $item->loanLines()->where('outstanding_quantity', '>', 0)
                         ->whereHas('loan', fn ($query) => $query->where('status', 'active'))->sum('outstanding_quantity');
                     fputcsv($output, [
                         $item->code, $item->name, $item->category, $item->tracking_type,

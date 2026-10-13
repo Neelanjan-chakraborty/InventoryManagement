@@ -55,7 +55,7 @@ return new class extends Migration
             $table->foreignId('issued_by')->constrained('users')->restrictOnDelete();
             $table->date('issue_date');
             $table->date('due_date');
-            $table->string('purpose');
+            $table->text('purpose');
             $table->string('status')->default('active')->index();
             $table->timestamps();
             $table->index(['student_id', 'status']);
@@ -79,7 +79,7 @@ return new class extends Migration
             $table->unsignedInteger('quantity');
             $table->string('condition');
             $table->foreignId('received_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('received_at');
+            $table->dateTime('received_at');
             $table->text('remarks')->nullable();
             $table->timestamps();
         });
@@ -88,12 +88,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('loan_id')->constrained()->restrictOnDelete();
             $table->foreignId('requested_by')->constrained('users')->restrictOnDelete();
-            $table->timestamp('requested_at');
+            $table->dateTime('requested_at');
             $table->string('status')->default('pending')->index();
             $table->date('previous_due_date');
             $table->date('revised_due_date')->nullable();
             $table->foreignId('reviewed_by')->nullable()->constrained('users')->restrictOnDelete();
-            $table->timestamp('reviewed_at')->nullable();
+            $table->dateTime('reviewed_at')->nullable();
             $table->text('remarks')->nullable();
             $table->timestamps();
         });
@@ -107,7 +107,7 @@ return new class extends Migration
             $table->string('type');
             $table->integer('quantity')->default(0);
             $table->text('reason')->nullable();
-            $table->timestamp('occurred_at');
+            $table->dateTime('occurred_at');
             $table->timestamps();
             $table->index(['item_id', 'occurred_at']);
         });

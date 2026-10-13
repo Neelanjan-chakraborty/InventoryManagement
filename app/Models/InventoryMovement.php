@@ -15,7 +15,7 @@ class InventoryMovement extends Model
 
     protected function casts(): array
     {
-        return ['occurred_at' => 'datetime'];
+        return ['occurred_at' => 'datetime', 'quantity' => 'integer'];
     }
 
     public function item()

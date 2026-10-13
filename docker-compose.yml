@@ -1,0 +1,110 @@
+services:
+  mysql:
+    build:
+      context: ./docker/mysql
+    image: inventory-mysql:local
+    command:
+      # utf8mb4 everywhere, and the strictest sane SQL mode so data errors surface
+      # in development instead of being silently coerced.
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql-mode=STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION,ONLY_FULL_GROUP_BY
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE:-inventory}"
+      MYSQL_USER: "${DB_USERNAME:-inventory}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-inventory}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-root}"
+    volumes:
+      - app-mysql:/var/lib/mysql
+    # Published so you can attach TablePlus/DBeaver/mysql from the host.
+    # 3307 by default so it never fights a MySQL already running on 3306.
+    ports:
+      - "${DB_PORT_HOST:-3307}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      start_period: 30s
+      retries: 20
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: inventory-management:local
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      APP_NAME: Stockroom
+      APP_URL: "http://localhost:${APP_PORT:-8000}"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-inventory}"
+      DB_USERNAME: "${DB_USERNAME:-inventory}"
+      DB_PASSWORD: "${DB_PASSWORD:-inventory}"
+      # APP_KEY is generated once and persisted in the app-storage volume.
+      # Set it here to pin your own key instead.
+      # APP_KEY: base64:...
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1:8000/up') ? 0 : 1);"]
+      interval: 10s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    restart: unless-stopped
+
+  # Queue worker. Off by default (the app runs fine without it);
+  # start with: docker compose --profile worker up
+  queue:
+    build:
+      context: .
+      target: runtime
+    image: inventory-management:local
+    command: ["queue"]
+    environment:
+      APP_NAME: Stockroom
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-inventory}"
+      DB_USERNAME: "${DB_USERNAME:-inventory}"
+      DB_PASSWORD: "${DB_PASSWORD:-inventory}"
+    volumes:
+      - app-storage:/var/www/html/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    profiles: ["worker"]
+    restart: unless-stopped
+
+  # Test runner (dev dependencies included). Runs against a separate MySQL
+  # database so the suite exercises the same engine, charset and SQL mode as
+  # production rather than SQLite.
+  # Run with: docker compose run --rm test
+  test:
+    build:
+      context: .
+      target: test
+    image: inventory-management:test
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_TEST_DATABASE:-inventory_test}"
+      DB_USERNAME: "${DB_USERNAME:-inventory}"
+      DB_PASSWORD: "${DB_PASSWORD:-inventory}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    profiles: ["test"]
+
+volumes:
+  app-mysql:
+  app-storage:

@@ -16,6 +16,13 @@ use Illuminate\Validation\ValidationException;
 
 class BorrowingService
 {
+    /**
+     * InnoDB enforces the lockForUpdate() locks these methods rely on, so two
+     * concurrent transactions can deadlock or hit a lock-wait timeout. Laravel
+     * retries the whole closure that many times before surfacing the error.
+     */
+    private const DEADLOCK_ATTEMPTS = 3;
+
     public function issue(User $student, User $staff, array $data): Loan
     {
         return DB::transaction(function () use ($student, $staff, $data) {
@@ -76,7 +83,7 @@ class BorrowingService
             $this->recordMovement($item, $staff, 'issued', -$quantity, $loan, $asset);
 
             return $loan->load(['student', 'lines.item', 'lines.asset']);
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     public function receiveReturn(LoanLine $line, User $staff, array $data): ItemReturn
@@ -124,7 +131,7 @@ class BorrowingService
             }
 
             return $return;
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     public function requestRenewal(Loan $loan, User $student): RenewalRequest
@@ -153,7 +160,7 @@ class BorrowingService
                 'status' => 'pending',
                 'previous_due_date' => $loan->due_date,
             ]);
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     public function reviewRenewal(RenewalRequest $renewal, User $staff, string $decision, ?string $remarks): RenewalRequest
@@ -191,7 +198,7 @@ class BorrowingService
             ]);
 
             return $renewal->fresh(['loan', 'requester', 'reviewer']);
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     private function recordMovement(

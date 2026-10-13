@@ -44,6 +44,19 @@ docker compose exec app php artisan db:seed --class="Database\Seeders\DevAccount
 
 (`--force` is needed because the container runs with `APP_ENV=production`, which otherwise prompts for confirmation before seeding.) This is opt-in — `DevAccountsSeeder` is never run automatically, and it is not meant for anything beyond a local/dev database. Run it again any time after a `docker compose down -v` to recreate the same three logins.
 
+**For a populated demo** — the three accounts above plus a full, varied dataset (locations, bulk and individually tracked inventory, 25 students across 6 programmes, 4 coordinators, and ~30 loans covering every state the UI renders: active, due soon, overdue, completed, partially returned as damaged/lost/under-maintenance, and renewals pending/approved/rejected) — run `DemoDataSeeder` instead (it includes `DevAccountsSeeder`, so don't run both):
+
+```bash
+docker compose exec app php artisan db:seed --class="Database\Seeders\DemoDataSeeder" --force
+```
+
+All generated students share the password `Password123!` too, so you can sign in as any of them (see the Inventory page or `SELECT email FROM users WHERE role = 'student'`) to see a populated **My loans** view. `DemoDataSeeder` is not idempotent — it checks for its own data and refuses to run twice; to regenerate it, reset the database first:
+
+```bash
+docker compose exec app php artisan migrate:fresh --force
+docker compose exec app php artisan db:seed --class="Database\Seeders\DemoDataSeeder" --force
+```
+
 Other common operations:
 
 ```bash

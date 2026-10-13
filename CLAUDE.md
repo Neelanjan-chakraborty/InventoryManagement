@@ -39,7 +39,7 @@ vendor/bin/pint             # format (Pint is the only linter; no static analysi
 php artisan inventory:promote-admin user@example.edu   # bootstrap the first admin
 ```
 
-There are no seeded or hard-coded staff credentials by default: register through the app, promote with the artisan command above, then assign `coordinator` from **Access control**. For local Docker development only, `database/seeders/DevAccountsSeeder.php` creates one admin/coordinator/student account (password `Password123!`) — it is never run automatically; invoke it explicitly with `php artisan db:seed --class="Database\Seeders\DevAccountsSeeder" --force` (`--force` because the container runs `APP_ENV=production`). Never call it from `DatabaseSeeder` or any production path.
+There are no seeded or hard-coded staff credentials by default: register through the app, promote with the artisan command above, then assign `coordinator` from **Access control**. For local Docker development only, `database/seeders/DevAccountsSeeder.php` creates one admin/coordinator/student account (password `Password123!`) — it is never run automatically; invoke it explicitly with `php artisan db:seed --class="Database\Seeders\DevAccountsSeeder" --force` (`--force` because the container runs `APP_ENV=production`). `database/seeders/DemoDataSeeder.php` builds on it with a full varied dataset (locations, bulk + asset inventory, 25 students/4 coordinators, ~30 loans spanning every status/renewal/return-condition the UI renders) — it writes through `BorrowingService` so the same invariants apply, bails out early if its data already exists (not idempotent otherwise — `migrate:fresh` first to reseed), and like `DevAccountsSeeder` is never wired into `DatabaseSeeder` or any production path.
 
 ## Architecture
 
